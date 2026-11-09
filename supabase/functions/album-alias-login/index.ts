@@ -10,14 +10,14 @@ const allowedOrigins = new Set([
 ]);
 
 function answer(origin: string, body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), {
+  return new Response(status === 204 ? null : JSON.stringify(body), {
     status,
     headers: {
       'Content-Type': 'application/json',
       'Cache-Control': 'no-store, max-age=0',
       Vary: 'Origin',
       'Access-Control-Allow-Origin': origin,
-      'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+      'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
       'Access-Control-Allow-Methods': 'POST, OPTIONS',
     },
   });
