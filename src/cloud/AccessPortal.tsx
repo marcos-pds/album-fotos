@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import type { CSSProperties, FormEvent, ReactNode } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import { supabase } from './supabase';
+import { PROFILE_OPTIONS, readRememberedAccounts, writeRememberedAccount, getAvailableStorage } from './rememberedAccounts';
 
 type Notice = (message: string) => void;
 type RequestRow = {
@@ -49,11 +50,28 @@ const authRedirect = () => new URL(import.meta.env.BASE_URL, window.location.ori
 
 export function AccessGate({ onNotice }: { onNotice: Notice }) {
   const [view, setView] = useState<'login' | 'signup'>('login');
-  const [email, setEmail] = useState('');
-  const [name, setName] = useState('');
+  const [profile, setProfile] = useState(() => readRememberedAccounts(getAvailableStorage()).lastProfile);
+  const [email, setEmail] = useState(() => {
+    const prefs = readRememberedAccounts(getAvailableStorage());
+    return prefs.emails[prefs.lastProfile] || '';
+  });
+  const [name, setName] = useState(() => readRememberedAccounts(getAvailableStorage()).lastProfile);
+  const [remember, setRemember] = useState(true);
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
+
+  const pickProfile = (alias: string) => {
+    const prefs = readRememberedAccounts(getAvailableStorage());
+    setProfile(alias);
+    setName(alias);
+    setEmail(prefs.emails[alias] || '');
+    setMessage('');
+  };
+
+  const saveProfile = () => {
+    writeRememberedAccount(getAvailableStorage(), profile, email, remember);
+  };
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
@@ -69,10 +87,12 @@ export function AccessGate({ onNotice }: { onNotice: Notice }) {
           options: { data: { full_name: name.trim().slice(0, 60) }, emailRedirectTo: authRedirect() }
         });
         if (error) throw error;
+        saveProfile();
         setMessage('Conta criada. Verifique sua caixa de entrada e confirme o e-mail. Depois volte para entrar e pedir acesso.');
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
         if (error) throw error;
+        saveProfile();
       }
     } catch (err) { onNotice(err instanceof Error ? err.message : 'Não foi possível continuar.'); }
     finally { setBusy(false); }
@@ -87,6 +107,7 @@ export function AccessGate({ onNotice }: { onNotice: Notice }) {
         options: { shouldCreateUser: true, emailRedirectTo: authRedirect() }
       });
       if (error) throw error;
+      saveProfile();
       setMessage('Enviamos um link de acesso para seu e-mail. Depois de clicar, você poderá pedir aprovação.');
     } catch (err) { onNotice(err instanceof Error ? err.message : 'Não foi possível enviar o link.'); }
     finally { setBusy(false); }
@@ -108,14 +129,36 @@ export function AccessGate({ onNotice }: { onNotice: Notice }) {
       </button>)}
     </div>
 
+    <div style={{ display: 'grid', gap: 8, marginBottom: 18 }}>
+      <span style={{ fontSize: 13, color: '#ead9d1' }}>Escolha seu perfil</span>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+        {PROFILE_OPTIONS.map(alias => <button type="button" key={alias} onClick={() => pickProfile(alias)}
+          aria-pressed={profile === alias}
+          style={{ ...subtleButton, padding: '12px 9px', background: profile === alias ? '#f1e5d3' : '#ffffff13',
+            color: profile === alias ? '#512a34' : '#fff1e5',
+            border: profile === alias ? '1px solid #d5b782' : '1px solid #ffffff30',
+            fontSize: 13, borderRadius: 11 }}>
+          {alias}
+        </button>)}
+      </div>
+    </div>
+
     <form onSubmit={submit} style={{ display: 'grid', gap: 15 }}>
       {view === 'signup' && field('Seu nome', <input autoComplete="name" required minLength={2} maxLength={60}
         value={name} onChange={e => setName(e.target.value)} style={inputStyle} placeholder="Seu nome" />)}
-      {field('E-mail', <input type="email" autoComplete="email" required value={email}
+      {field('E-mail (necessário para a conta Supabase)', <input type="email" autoComplete="email" required value={email}
         onChange={e => setEmail(e.target.value)} style={inputStyle} placeholder="voce@exemplo.com" />)}
       {field('Senha', <input type="password" autoComplete={view === 'signup' ? 'new-password' : 'current-password'}
         required minLength={view === 'signup' ? 8 : undefined} value={password}
         onChange={e => setPassword(e.target.value)} style={inputStyle} placeholder="••••••••" />)}
+      <label style={{ fontSize: 13, color: '#ead9d1', display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
+        <input type="checkbox" checked={remember} onChange={event => setRemember(event.target.checked)}
+          style={{ width: 17, height: 17, accentColor: '#b88453' }} />
+        Lembrar meu usuário neste dispositivo
+      </label>
+      <p style={{ fontSize: 12, lineHeight: 1.5, color: '#d7c2c1', margin: '-7px 0 0' }}>
+        Salva apenas o perfil e e-mail; nunca a senha. A sessão fica conectada até você clicar em Sair.
+      </p>
       <button disabled={busy} style={{ ...buttonStyle, opacity: busy ? 0.65 : 1 }}>
         {busy ? 'Aguarde…' : view === 'signup' ? 'Criar minha conta' : 'Entrar no álbum'}
       </button>

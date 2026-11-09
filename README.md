@@ -62,3 +62,11 @@ Os **testes ponta a ponta** com dois e-mails reais ainda precisam ser realizados
 ## Migração
 
 Migrado do diretório `examples/album-de-memorias-3d/` no repositório da Central de Trabalhadores IA. O código original só deve ser removido após validar esta cópia independente e o site público.
+
+## Perfis do casal e usuário lembrado
+
+A tela de entrada oferece os perfis **Rayssa.Lima** e **Marcos.Paulo**. São apelidos visuais, não substitutos do Supabase Auth: para criar conta é necessário um **e-mail válido** e confirmar esse e-mail.
+
+A opção **Lembrar meu usuário neste dispositivo** salva apenas o apelido e e-mail no localStorage, nunca a senha. A sessão autenticada é persistida pelo Supabase e normalmente continua ativa até sair ou ser invalidada; limpar os dados do navegador encerra essa continuidade.
+
+Nunca coloque senhas reais no GitHub, no código do frontend nem nos arquivos de configuração. Para contas reais prefira senhas fortes e distintas. O acesso às fotografias exige autenticação e aprovação do proprietário.
