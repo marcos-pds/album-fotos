@@ -51,7 +51,7 @@ test('default login uses profile and password, initial activation is separate', 
   const cloud = readFileSync(new URL('../src/cloud/supabase.ts', import.meta.url), 'utf8');
   assert.match(ui, /Quem está entrando\?/);
   assert.match(ui, /view === 'signup' && <>/);
-  assert.match(ui, /autoFocus required minLength={8}/);
+  assert.match(ui, /autoFocus required minLength=\{8\}/);
   assert.match(ui, /album-alias-login/);
   assert.match(ui, /auth\.setSession/);
   assert.match(ui, /auth\.signUp/);
