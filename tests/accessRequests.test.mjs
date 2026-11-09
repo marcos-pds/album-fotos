@@ -24,8 +24,8 @@ test('somente o proprietario autoriza e existe limite de uma pessoa parceira', (
 
 test('cadastro e tela de espera estao integrados a aprovacao', () => {
   assert.match(access, /auth\.signUp/);
-  assert.match(access, /auth\.signInWithPassword/);
-  assert.match(access, /auth\.signInWithOtp/);
+  assert.match(access, /album-alias-login/);
+  assert.match(access, /auth\.setSession/);
   assert.match(access, /Solicitar acesso ao álbum/);
   assert.match(access, /Aprovar/);
   assert.match(access, /Recusar/);
