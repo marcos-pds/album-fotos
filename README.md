@@ -41,7 +41,7 @@ O arquivo `.env.pages` contém **somente** URL e chave publicável, destinada ao
 
 ## Cadastro com aprovação
 
-- Rayssa cria uma conta com nome, e-mail e senha (ou usa um link de acesso), confirmando o endereço de e-mail.
+- No primeiro acesso, cada pessoa escolhe o apelido, cria uma conta com e-mail verificável e senha, e confirma o endereço. No login normal, não há campo de e-mail.
 - Ela clica em **Solicitar acesso ao álbum**.
 - Marcos recebe a solicitação no **sino** do álbum e pode **Aprovar** ou **Recusar**.
 - Apenas após aprovação a conta tem permissão de visualizar, adicionar e editar as fotos e os textos.
@@ -70,3 +70,19 @@ A tela de entrada oferece os perfis **Rayssa.Lima** e **Marcos.Paulo**. São ape
 A opção **Lembrar meu usuário neste dispositivo** salva apenas o apelido e e-mail no localStorage, nunca a senha. A sessão autenticada é persistida pelo Supabase e normalmente continua ativa até sair ou ser invalidada; limpar os dados do navegador encerra essa continuidade.
 
 Nunca coloque senhas reais no GitHub, no código do frontend nem nos arquivos de configuração. Para contas reais prefira senhas fortes e distintas. O acesso às fotografias exige autenticação e aprovação do proprietário.
+
+## Login apenas com perfil e senha
+
+O fluxo de entrada é: **selecionar Rayssa.Lima ou Marcos.Paulo → digitar a senha → entrar**.
+O campo de e-mail **não aparece na tela normal de login**.
+
+O botão **Primeiro acesso** oferece um cadastro inicial separado (e-mail verificado é obrigatório no Supabase Auth).
+O proprietário cadastra a conta usando o e-mail já permitido na allowlist; depois da confirmação e primeiro acesso autenticado, a conta é vinculada automaticamente a **Marcos.Paulo**. A pessoa parceira primeiro solicita acesso; após a aprovação pelo sino, o perfil **Rayssa.Lima** é vinculado.
+
+O mapeamento apelido → conta/e-mail fica protegido em `public.album_profile_logins` com **RLS sem acesso público**.
+A Edge Function `album-alias-login` consulta o mapeamento somente no servidor, verifica a senha pelo Supabase Auth e devolve apenas a sessão. O frontend não contém e-mails pessoais ou senhas.
+
+A opção **Lembrar meu perfil** salva somente o apelido no navegador; não grava e-mail nem senha. O Supabase mantém a sessão automaticamente até que seja encerrada ou revogada.
+A migration `supabase/003_private_profile_login.sql` e a função `supabase/functions/album-alias-login/` foram instaladas no projeto Supabase existente.
+
+**Nota:** a versão do código não cria usuários reais. Para ativar os dois perfis é necessário cadastrar e confirmar cada conta individualmente no primeiro acesso. Não use senhas compartilhadas ou curtas para fotos pessoais.

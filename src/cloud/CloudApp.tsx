@@ -138,6 +138,9 @@ export default function CloudApp() {
         setAllowed(Boolean(data));
         setAllowedUserId(data ? session.user.id : null);
         if (!data) { setStatus('Acesso não autorizado'); return; }
+        // Bind this verified, approved account to its private nickname for future password-only logins.
+        const { error: aliasError } = await supabase!.rpc('claim_album_profile');
+        if (aliasError && active) setNotice('Não foi possível ativar seu nome de login: ' + aliasError.message);
         await fetchAlbum(true);
         if (active) setStatus('Sincronizado ✓');
       } catch (error) {
