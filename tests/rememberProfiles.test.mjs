@@ -67,7 +67,7 @@ test('private alias mapping enforces role, confirmed email and backend authentic
   assert.match(sql, /email_confirmed_at is not null/);
   assert.match(sql, /when 'owner' then 'Marcos\.Paulo'/);
   assert.match(sql, /when 'partner' then 'Rayssa\.Lima'/);
-  assert.match(edge, /admin\.from\('album_profile_logins'\)/);
+  assert.match(edge, /admin\s*\.from\('album_profile_logins'\)/);
   assert.match(edge, /auth\.signInWithPassword/);
   assert.match(edge, /Cache-Control': 'no-store/);
   assert.doesNotMatch(edge, /10\.10\.26/);
