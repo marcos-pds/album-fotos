@@ -46,98 +46,65 @@ function Layout({ children }: { children: ReactNode }) {
 }
 
 const field = (caption: string, control: ReactNode) => <label style={{ display: 'grid', gap: 6, fontSize: 13, color: '#ead9d1' }}>{caption}{control}</label>;
-const authRedirect = () => new URL(import.meta.env.BASE_URL, window.location.origin).toString();
+
 
 
 export function AccessGate({ onNotice }: { onNotice: Notice }) {
-  const [view, setView] = useState<'login' | 'signup'>('login');
   const [profile, setProfile] = useState(() => readRememberedProfile(getAvailableStorage()));
-  const [email, setEmail] = useState('');
-  const [name, setName] = useState('');
   const [password, setPassword] = useState('');
   const [remember, setRemember] = useState(true);
   const [busy, setBusy] = useState(false);
-  const [message, setMessage] = useState('');
 
-  const pickProfile = (alias: string) => {
+  const selectProfile = (alias: string) => {
     setProfile(alias);
-    setName(alias);
     setPassword('');
-    setMessage('');
-  };
-  const saveProfile = () => {
-    writeRememberedProfile(getAvailableStorage(), profile, remember);
   };
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
     if (!supabase) return;
-    if (!PROFILE_OPTIONS.some(option => option === profile)) {
+    if (!PROFILE_OPTIONS.some(alias => alias === profile)) {
       onNotice('Selecione Rayssa.Lima ou Marcos.Paulo.');
       return;
     }
+    if (password.length < 6) {
+      onNotice('Digite a senha deste perfil.');
+      return;
+    }
     setBusy(true);
-    setMessage('');
     try {
-      if (view === 'signup') {
-        if (name.trim().length < 2) throw new Error('Informe seu nome.');
-        if (!email.trim()) throw new Error('Na primeira ativação, informe um e-mail válido.');
-        if (password.length < 8) throw new Error('Escolha uma senha com pelo menos 8 caracteres.');
-        const { error } = await supabase.auth.signUp({
-          email: email.trim().toLowerCase(),
-          password,
-          options: { data: { full_name: name.trim().slice(0, 60) }, emailRedirectTo: authRedirect() }
-        });
-        if (error) throw error;
-        saveProfile();
-        setPassword('');
-        setMessage('Conta solicitada. Confirme seu e-mail pelo link recebido. Ao confirmar, volte para o álbum. O acesso às fotos ainda dependerá de aprovação.');
-      } else {
-        if (password.length < 8) throw new Error('Digite sua senha de acesso.');
-        const { data, error } = await supabase.functions.invoke('album-alias-login', {
-          body: { alias: profile, password }
-        });
-        if (error || !data?.access_token || !data?.refresh_token) {
-          throw new Error('Não foi possível entrar. Se ainda não ativou este perfil, use Primeiro acesso. Caso contrário, confira a senha.');
-        }
-        const { error: sessionError } = await supabase.auth.setSession({
-          access_token: data.access_token,
-          refresh_token: data.refresh_token
-        });
-        if (sessionError) throw sessionError;
-        saveProfile();
-        setPassword('');
+      const { data, error } = await supabase.functions.invoke('album-alias-login', {
+        body: { alias: profile, password }
+      });
+      if (error || !data?.access_token || !data?.refresh_token) {
+        throw new Error('Nome ou senha incorretos. Confira os dados e tente novamente.');
       }
-    } catch (err) {
-      onNotice(err instanceof Error ? err.message : 'Não foi possível continuar.');
+      const { error: sessionError } = await supabase.auth.setSession({
+        access_token: data.access_token,
+        refresh_token: data.refresh_token
+      });
+      if (sessionError) throw sessionError;
+      writeRememberedProfile(getAvailableStorage(), profile, remember);
+      setPassword('');
+    } catch (error) {
+      onNotice(error instanceof Error ? error.message : 'Não foi possível entrar. Tente novamente.');
     } finally {
       setBusy(false);
     }
   };
 
   return <Layout>
-    <div style={{ textAlign: 'center', marginBottom: 23 }}>
+    <div style={{ textAlign: 'center', marginBottom: 26 }}>
       <div style={{ fontFamily: 'Georgia,serif', color: '#e6c68d', fontSize: 46, letterSpacing: 7 }}>R &amp; M</div>
       <div style={{ fontFamily: 'Georgia,serif', fontSize: 24, marginTop: 7 }}>Rayssa &amp; Marcos Paulo</div>
       <p style={{ fontSize: 13, color: '#dbc9c6', marginTop: 8 }}>Nosso livro de memórias • um lugar só nosso</p>
     </div>
-
-    <div style={{ display: 'flex', padding: 4, borderRadius: 13, background: '#ffffff12', marginBottom: 23, gap: 4 }}>
-      {(['login','signup'] as const).map(option => <button key={option} type="button"
-        onClick={() => { setView(option); setMessage(''); setPassword(''); }}
-        style={{ flex: 1, borderRadius: 10, padding: 11, cursor: 'pointer', border: 0,
-          background: view === option ? '#f4e8d7' : 'transparent',
-          color: view === option ? '#532a32' : '#f9e9da', fontWeight: 600 }}>
-        {option === 'login' ? 'Entrar' : 'Primeiro acesso'}
-      </button>)}
-    </div>
-
-    <div style={{ display: 'grid', gap: 8, marginBottom: 18 }}>
+    <div style={{ display: 'grid', gap: 10, marginBottom: 22 }}>
       <span style={{ fontSize: 13, color: '#ead9d1' }}>Quem está entrando?</span>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 9 }}>
         {PROFILE_OPTIONS.map(alias => <button type="button" key={alias}
-          onClick={() => pickProfile(alias)} aria-pressed={profile === alias}
-          style={{ ...subtleButton, padding: '13px 9px',
+          onClick={() => selectProfile(alias)} aria-pressed={profile === alias}
+          style={{ ...subtleButton, padding: '15px 9px',
             background: profile === alias ? '#f1e5d3' : '#ffffff13',
             color: profile === alias ? '#512a34' : '#fff1e5',
             border: profile === alias ? '1px solid #d5b782' : '1px solid #ffffff30',
@@ -148,20 +115,13 @@ export function AccessGate({ onNotice }: { onNotice: Notice }) {
     </div>
 
     {profile ? <form onSubmit={submit} style={{ display: 'grid', gap: 15 }}>
-      {view === 'signup' && <>
-        {field('Seu nome', <input autoComplete="name" required minLength={2} maxLength={60}
-          value={name} onChange={e => setName(e.target.value)}
-          style={inputStyle} placeholder="Seu nome" />)}
-        {field('E-mail para confirmar a conta (somente no primeiro acesso)', <input type="email"
-          autoComplete="email" required value={email}
-          onChange={e => setEmail(e.target.value)}
-          style={inputStyle} placeholder="voce@exemplo.com" />)}
-      </>}
-      {field(view === 'signup' ? 'Crie sua senha' : 'Senha',
-        <input type="password" autoComplete={view === 'signup' ? 'new-password' : 'current-password'}
-          autoFocus required minLength={8} maxLength={128} value={password}
-          onChange={e => setPassword(e.target.value)}
-          style={inputStyle} placeholder="Digite sua senha" />)}
+      <div style={{ fontSize: 13, color: '#e6d1ce' }}>
+        Entrando como <strong style={{ color: '#f3d39c' }}>{profile}</strong>
+      </div>
+      {field('Senha', <input type="password" autoComplete="current-password"
+        autoFocus required minLength={6} maxLength={128} value={password}
+        onChange={e => setPassword(e.target.value)}
+        style={inputStyle} placeholder="Digite sua senha" />)}
       <label style={{ fontSize: 13, color: '#ead9d1', display: 'flex',
         alignItems: 'center', gap: 10, cursor: 'pointer' }}>
         <input type="checkbox" checked={remember} onChange={event => setRemember(event.target.checked)}
@@ -169,19 +129,16 @@ export function AccessGate({ onNotice }: { onNotice: Notice }) {
         Lembrar meu perfil neste dispositivo
       </label>
       <button disabled={busy} style={{ ...buttonStyle, opacity: busy ? 0.65 : 1 }}>
-        {busy ? 'Aguarde…' : view === 'signup' ? 'Ativar meu perfil' : 'Entrar no álbum'}
+        {busy ? 'Entrando…' : 'Entrar no álbum'}
       </button>
     </form> :
       <p style={{ color: '#ddc5be', fontSize: 13, textAlign: 'center', lineHeight: 1.7 }}>
-        Toque no seu nome acima para digitar a senha.
+        Escolha um dos dois perfis acima para digitar sua senha.
       </p>}
 
-    {message && <p role="status" style={{ fontSize: 13, color: '#ffdfb4', lineHeight: 1.5 }}>{message}</p>}
-    <p style={{ color: '#ccb9bc', fontSize: 12, lineHeight: 1.55,
-      marginTop: 22, textAlign: 'center' }}>
-      {view === 'login'
-        ? 'Depois de ativar seu perfil uma vez, você entra apenas com o nome e a senha. A sessão permanece conectada neste navegador.'
-        : 'A confirmação de e-mail acontece apenas no primeiro acesso. As fotos continuam privadas até a aprovação do proprietário.'}
+    <p style={{ color: '#ccb9bc', fontSize: 12, lineHeight: 1.6,
+      marginTop: 24, textAlign: 'center' }}>
+      A sessão fica conectada neste dispositivo até você sair ou ela ser invalidada.
     </p>
   </Layout>;
 }

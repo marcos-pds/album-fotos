@@ -1,88 +1,46 @@
-# Álbum de Memórias — Rayssa & Marcos Paulo 💞
+# Álbum de Memórias 3D — Rayssa & Marcos Paulo 💞
 
-Livro de memórias 3D independente para **Rayssa & Marcos Paulo**, com monograma **R & M**, fotos privadas, texto sincronizado e aprovação de novos participantes pelo sino.
+Livro 3D de Rayssa & Marcos Paulo, com fotografias privadas, mensagens e sincronização em tempo real. Repositório independente da Central IA.
 
-**Este repositório é independente da Central de Trabalhadores IA.**
+## Acesso ao álbum
+
+Site: https://marcos-pds.github.io/album-fotos/
+
+O login mostra exatamente dois perfis: **Rayssa.Lima** e **Marcos.Paulo**. Selecione seu perfil, digite a senha previamente definida e clique em Entrar no álbum. Não existe campo de e-mail nem botão Primeiro acesso.
+
+A senha é conferida no servidor Supabase. Os hashes bcrypt dos dois perfis foram configurados diretamente no banco e não estão neste repositório. O código público não contém a senha em texto claro.
+
+O perfil Marcos.Paulo reutiliza a conta de proprietário já verificada e autorizada no Supabase. A senha definida é aplicada no primeiro login válido. O perfil Rayssa.Lima recebe uma identidade interna criada pelo servidor no primeiro login correto, sem pedir e-mail pessoal ou exigir cadastro.
+
+A sessão é persistida pelo Supabase e pode expirar ou ser revogada. A opção Lembrar meu perfil salva apenas o nome no navegador, nunca a senha.
+
+**Atenção de segurança:** a senha igual de seis dígitos escolhida para os dois perfis é fraca; qualquer pessoa que a descubra poderá acessar as fotos. É recomendável mudar para senhas fortes e distintas. O backend possui limite de tentativas, mas isso não substitui credenciais fortes.
 
 ## Executar localmente
 
-Node.js 22+ recomendado.
+Node.js 22+: npm install; npm test; npm run build; npm run dev.
 
-```bash
-npm install
-npm test
-npm run build
-npm run dev
-```
+Use .env.example como referência para .env.local, incluindo apenas a URL e a chave publicável do Supabase. Nunca comite service_role, chaves secretas ou senhas.
 
-Copie `.env.example` para `.env.local` se quiser conectar o banco no modo de desenvolvimento; use somente as variáveis públicas `VITE_SUPABASE_URL` e `VITE_SUPABASE_PUBLISHABLE_KEY`. Não coloque chaves `sb_secret_`, `service_role` nem senhas de banco no GitHub.
+## Publicação gratuita
 
-## Publicar gratuitamente (GitHub Pages)
+O GitHub Actions publica o site a partir do arquivo .github/workflows/deploy-pages.yml.
+No GitHub Pages, a origem deve ser GitHub Actions. O endereço público é https://marcos-pds.github.io/album-fotos/.
 
-1. No repositório, acesse [Settings → Pages](https://github.com/marcos-pds/album-fotos/settings/pages).
-2. Em **Build and deployment → Source**, selecione **GitHub Actions**.
-3. O fluxo [deploy-pages.yml](.github/workflows/deploy-pages.yml) será executado em alterações na `main`. Caso seja necessário, execute manualmente pela aba Actions.
-4. Depois de um deploy bem-sucedido, o endereço será **https://marcos-pds.github.io/album-fotos/**.
+## Banco e autenticação
 
-**Importante:** o endereço acima só deve ser compartilhado como funcional depois de verificar que a publicação passou.
+O banco do Supabase é o projeto album-de-memorias, já existente. As fotos ficam no bucket privado album-private e as páginas têm RLS.
 
-## Configurar a autenticação
+- supabase/001_album_privado.sql: páginas e armazenamento privado
+- supabase/002_acesso_com_aprovacao.sql: legado de solicitações, não apresentado no login
+- supabase/003_private_profile_login.sql: associação privada entre nome e usuário
+- supabase/004_fixed_two_accounts.sql: hashes protegidos e controle de tentativas (sem a senha)
+- supabase/functions/album-alias-login/index.ts: login e criação interna dos dois perfis
 
-O banco existente do Supabase, projeto `album-de-memorias`, já está configurado com tabelas privadas, bucket `album-private`, RLS e sistema de aprovação por solicitação. **Não crie outro projeto Supabase.**
+A criação do segundo usuário e a definição da senha da conta proprietária acontecem automaticamente no primeiro acesso válido pelo backend; não precisam de uma tela pública de cadastro.
 
-Abra [Supabase → Authentication → URL Configuration](https://supabase.com/dashboard/project/htrtfbsxrekutngqdawn/auth/url-configuration):
+## Testes
 
-- Configure **Site URL**: `https://marcos-pds.github.io/album-fotos/`.
-- Acrescente em **Redirect URLs**: `https://marcos-pds.github.io/album-fotos/`.
-- Mantenha `http://127.0.0.1:5173/` se desejar testar localmente.
-- Em Authentication → Providers → Email, mantenha a confirmação de e-mail habilitada.
+npm test valida contratos e segurança. npm run build verifica TypeScript e Vite.
 
-O arquivo `.env.pages` contém **somente** URL e chave publicável, destinada ao navegador; segurança real depende das políticas RLS e Storage do Supabase.
-
-## Cadastro com aprovação
-
-- No primeiro acesso, cada pessoa escolhe o apelido, cria uma conta com e-mail verificável e senha, e confirma o endereço. No login normal, não há campo de e-mail.
-- Ela clica em **Solicitar acesso ao álbum**.
-- Marcos recebe a solicitação no **sino** do álbum e pode **Aprovar** ou **Recusar**.
-- Apenas após aprovação a conta tem permissão de visualizar, adicionar e editar as fotos e os textos.
-- A lista de usuários autorizados não fica publicada no GitHub; permanece no banco.
-
-## Proteção das fotografias
-
-Fotos não são hospedadas pelo GitHub: elas ficam em bucket privado no Supabase. Somente usuários autenticados e aprovados podem obter URLs assinadas temporárias. URLs assinadas devem ser mantidas privadas.
-
-O Supabase Free possui cotas e pode pausar por inatividade. Guarde backups de suas memórias.
-
-## Verificações
-
-`npm test` verifica modelo de folhas e contratos de segurança. `npm run build` compila TypeScript e Vite. O GitHub Actions executa testes e publica o site, após habilitar Pages.
-
-Os **testes ponta a ponta** com dois e-mails reais ainda precisam ser realizados: criar conta, aprovar, carregar foto, atualizar nos dois dispositivos, recarregar e verificar privacidade no celular.
-
-## Migração
-
-Migrado do diretório `examples/album-de-memorias-3d/` no repositório da Central de Trabalhadores IA. O código original só deve ser removido após validar esta cópia independente e o site público.
-
-## Perfis do casal e usuário lembrado
-
-A tela de entrada oferece os perfis **Rayssa.Lima** e **Marcos.Paulo**. São apelidos visuais, não substitutos do Supabase Auth: para criar conta é necessário um **e-mail válido** e confirmar esse e-mail.
-
-A opção **Lembrar meu usuário neste dispositivo** salva apenas o apelido e e-mail no localStorage, nunca a senha. A sessão autenticada é persistida pelo Supabase e normalmente continua ativa até sair ou ser invalidada; limpar os dados do navegador encerra essa continuidade.
-
-Nunca coloque senhas reais no GitHub, no código do frontend nem nos arquivos de configuração. Para contas reais prefira senhas fortes e distintas. O acesso às fotografias exige autenticação e aprovação do proprietário.
-
-## Login apenas com perfil e senha
-
-O fluxo de entrada é: **selecionar Rayssa.Lima ou Marcos.Paulo → digitar a senha → entrar**.
-O campo de e-mail **não aparece na tela normal de login**.
-
-O botão **Primeiro acesso** oferece um cadastro inicial separado (e-mail verificado é obrigatório no Supabase Auth).
-O proprietário cadastra a conta usando o e-mail já permitido na allowlist; depois da confirmação e primeiro acesso autenticado, a conta é vinculada automaticamente a **Marcos.Paulo**. A pessoa parceira primeiro solicita acesso; após a aprovação pelo sino, o perfil **Rayssa.Lima** é vinculado.
-
-O mapeamento apelido → conta/e-mail fica protegido em `public.album_profile_logins` com **RLS sem acesso público**.
-A Edge Function `album-alias-login` consulta o mapeamento somente no servidor, verifica a senha pelo Supabase Auth e devolve apenas a sessão. O frontend não contém e-mails pessoais ou senhas.
-
-A opção **Lembrar meu perfil** salva somente o apelido no navegador; não grava e-mail nem senha. O Supabase mantém a sessão automaticamente até que seja encerrada ou revogada.
-A migration `supabase/003_private_profile_login.sql` e a função `supabase/functions/album-alias-login/` foram instaladas no projeto Supabase existente.
-
-**Nota:** a versão do código não cria usuários reais. Para ativar os dois perfis é necessário cadastrar e confirmar cada conta individualmente no primeiro acesso. Não use senhas compartilhadas ou curtas para fotos pessoais.
+O resultado de compilação não substitui um teste ponta a ponta com ambos os perfis: efetuar primeiro login, enviar foto, sincronizar dois aparelhos, recarregar e verificar privacidade.

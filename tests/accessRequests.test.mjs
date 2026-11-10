@@ -22,14 +22,12 @@ test('somente o proprietario autoriza e existe limite de uma pessoa parceira', (
   assert.match(access, /p_decision: decision/);
 });
 
-test('cadastro e tela de espera estao integrados a aprovacao', () => {
-  assert.match(access, /auth\.signUp/);
-  assert.match(access, /album-alias-login/);
-  assert.match(access, /auth\.setSession/);
-  assert.match(access, /Solicitar acesso ao álbum/);
-  assert.match(access, /Aprovar/);
-  assert.match(access, /Recusar/);
-  assert.match(access, /album_access_requests/);
+test('login permite apenas perfis fixos, sem cadastro na tela', () => {
+  const login = access.slice(access.indexOf('export function AccessGate('), access.indexOf('export function PendingAccess('));
+  assert.match(login, /album-alias-login/);
+  assert.match(login, /auth\.setSession/);
+  assert.doesNotMatch(login, /Primeiro acesso|auth\.signUp|signInWithOtp/);
+  assert.match(access, /album_access_requests/); // legacy function not presented as login
 });
 
 test('capa esta personalizada com o monograma do casal', () => {
