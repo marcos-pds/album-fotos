@@ -5,7 +5,7 @@ import Album, { createRandomEditablePage, defaultAlbumData, type AlbumSheet, typ
 import { fromRows, makeInitialRows, toRow, type AlbumPageRow } from './albumRows';
 import { signedPhotoUrls, uploadPrivatePhoto } from './photos';
 import { cloudConfigured, supabase } from './supabase';
-import { AccessGate, ApprovalBell } from './AccessPortal';
+import { AccessGate } from './AccessPortal';
 
 const uiStyle: CSSProperties = {
   position: 'fixed', zIndex: 3000, top: 14, left: 14, right: 14, display: 'flex', alignItems: 'center',
@@ -23,9 +23,7 @@ export default function CloudApp() {
   const [session, setSession] = useState<Session | null>(null);
   const [checkingAuth, setCheckingAuth] = useState(true);
   const [allowed, setAllowed] = useState(false);
-  const [role, setRole] = useState<string | null>(null);
   const [allowedUserId, setAllowedUserId] = useState<string | null>(null);
-  const [approvalTick, setApprovalTick] = useState(0);
   const [loadingAlbum, setLoadingAlbum] = useState(false);
   const [status, setStatus] = useState('Conectando…');
   const [notice, setNotice] = useState('');
@@ -126,7 +124,7 @@ export default function CloudApp() {
   }, []);
 
   useEffect(() => {
-    if (!supabase || !session) { setAllowed(false); setRole(null); setAllowedUserId(null); return; }
+    if (!supabase || !session) { setAllowed(false); setAllowedUserId(null); return; }
     let active = true;
     setLoadingAlbum(true);
     const initialize = async () => {
@@ -134,7 +132,6 @@ export default function CloudApp() {
         const { data, error } = await supabase!.rpc('album_my_role');
         if (error) throw error;
         if (!active) return;
-        setRole(data || null);
         setAllowed(Boolean(data));
         setAllowedUserId(data ? session.user.id : null);
         if (!data) { setStatus('Acesso não autorizado'); return; }
@@ -154,7 +151,7 @@ export default function CloudApp() {
     };
     void initialize();
     return () => { active = false; };
-  }, [session?.user.id, fetchAlbum, approvalTick]);
+  }, [session?.user.id, fetchAlbum]);
 
   useEffect(() => {
     if (!supabase || !allowed || !session || allowedUserId !== session.user.id) return;
@@ -231,15 +228,9 @@ export default function CloudApp() {
   </CenterPanel>;
 
   return <>
-    <div style={uiStyle}>
-      <div style={{ background: '#291b25cf', borderRadius: 14, padding: '8px 12px', border: '1px solid #ffffff26', pointerEvents: 'auto', color: '#fff', fontSize: 12 }}>
-        <strong>💞 Nosso álbum</strong> · {status}
-      </div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, pointerEvents: 'auto' }}>
-        {role === 'owner' && <ApprovalBell onNotice={setNotice} />}
-        <button style={{ ...buttonStyle, padding: '7px 12px', background: '#291b25d5', fontSize: 12 }} onClick={async () => { await flushPending(); await supabase?.auth.signOut(); }}>Sair</button>
-      </div>
-    </div>
+    <span role="status" style={{ position: 'absolute', width: 1, height: 1, padding: 0, margin: -1, overflow: 'hidden', clip: 'rect(0, 0, 0, 0)', whiteSpace: 'nowrap', border: 0 }}>
+      {status}
+    </span>
     <Album controlledSheets={sheets} onUpdatePage={updatePage} onCreateSheet={addSheet}
       onUploadPhoto={async (_index, _side, file) => uploadPrivatePhoto(file, session.user.id)}
       onPhotoError={setNotice} />

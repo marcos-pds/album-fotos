@@ -6,7 +6,7 @@ Livro 3D de Rayssa & Marcos Paulo, com fotografias privadas, mensagens e sincron
 
 Site: https://marcos-pds.github.io/album-fotos/
 
-O login mostra exatamente dois perfis: **Rayssa.Lima** e **Marcos.Paulo**. Selecione seu perfil, digite a senha previamente definida e clique em Entrar no álbum. Não existe campo de e-mail nem botão Primeiro acesso.
+A tela do álbum aberto mostra somente o livro, sem cabeçalho, sino de aprovação ou botão Sair. Não há consultas a solicitações de acesso antigas.\n\nO login mostra exatamente dois perfis: **Rayssa.Lima** e **Marcos.Paulo**. Selecione seu perfil, digite a senha previamente definida e clique em Entrar no álbum. Não existe campo de e-mail nem botão Primeiro acesso.
 
 A senha é conferida no servidor Supabase. Os hashes bcrypt dos dois perfis foram configurados diretamente no banco e não estão neste repositório. O código público não contém a senha em texto claro.
 
