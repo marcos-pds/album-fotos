@@ -46,29 +46,31 @@ test('unrecognized storage values do not choose a user', () => {
   assert.equal(readRememberedProfile(storage), '');
 });
 
-test('default login uses profile and password, initial activation is separate', () => {
+test('default login selects only alias and password, with no signup', () => {
   const ui = readFileSync(new URL('../src/cloud/AccessPortal.tsx', import.meta.url), 'utf8');
+  const login = ui.slice(ui.indexOf('export function AccessGate('), ui.indexOf('export function PendingAccess('));
   const cloud = readFileSync(new URL('../src/cloud/supabase.ts', import.meta.url), 'utf8');
-  assert.match(ui, /Quem está entrando\?/);
-  assert.match(ui, /view === 'signup' && <>/);
-  assert.match(ui, /autoFocus required minLength=\{8\}/);
-  assert.match(ui, /album-alias-login/);
-  assert.match(ui, /auth\.setSession/);
-  assert.match(ui, /auth\.signUp/);
+  assert.match(login, /Quem está entrando\?/);
+  assert.match(login, /autoFocus required minLength=\{6\}/);
+  assert.match(login, /album-alias-login/);
+  assert.match(login, /auth\.setSession/);
+  assert.doesNotMatch(login, /Primeiro acesso|auth\.signUp|type="email"|signInWithOtp/);
   assert.match(cloud, /persistSession: true/);
-  assert.doesNotMatch(ui, /localStorage\.setItem\([^)]*password/i);
+  assert.doesNotMatch(login, /localStorage\.setItem\([^)]*password/i);
 });
 
-test('private alias mapping enforces role, confirmed email and backend authentication', () => {
-  const sql = readFileSync(new URL('../supabase/003_private_profile_login.sql', import.meta.url), 'utf8');
+test('private fixed PIN hashes, rate limits, and server-side provisioning', () => {
+  const sql = readFileSync(new URL('../supabase/004_fixed_two_accounts.sql', import.meta.url), 'utf8');
   const edge = readFileSync(new URL('../supabase/functions/album-alias-login/index.ts', import.meta.url), 'utf8');
-  assert.match(sql, /album_profile_logins enable row level security/);
-  assert.match(sql, /revoke all on public\.album_profile_logins from public, anon, authenticated/);
-  assert.match(sql, /email_confirmed_at is not null/);
-  assert.match(sql, /when 'owner' then 'Marcos\.Paulo'/);
-  assert.match(sql, /when 'partner' then 'Rayssa\.Lima'/);
-  assert.match(edge, /admin\s*\.from\('album_profile_logins'\)/);
+  assert.match(sql, /album_login_codes enable row level security/);
+  assert.match(sql, /revoke all on public\.album_login_codes from public, anon, authenticated/);
+  assert.match(sql, /album_login_attempts/);
+  assert.match(sql, /extensions\.crypt/);
+  assert.match(sql, /grant execute on function public\.album_verify_fixed_login/);
+  assert.match(edge, /album_verify_fixed_login/);
+  assert.match(edge, /auth\.admin\.createUser/);
+  assert.match(edge, /auth\.admin\.updateUserById/);
   assert.match(edge, /auth\.signInWithPassword/);
   assert.match(edge, /Cache-Control': 'no-store/);
-  assert.doesNotMatch(edge, /10\.10\.26/);
+  assert.doesNotMatch(sql + edge, /101026/);
 });
