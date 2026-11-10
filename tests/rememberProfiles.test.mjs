@@ -48,7 +48,7 @@ test('unrecognized storage values do not choose a user', () => {
 
 test('default login selects only alias and password, with no signup', () => {
   const ui = readFileSync(new URL('../src/cloud/AccessPortal.tsx', import.meta.url), 'utf8');
-  const login = ui.slice(ui.indexOf('export function AccessGate('), ui.indexOf('export function PendingAccess('));
+  const login = ui.slice(ui.indexOf('export function AccessGate('));
   const cloud = readFileSync(new URL('../src/cloud/supabase.ts', import.meta.url), 'utf8');
   assert.match(login, /Quem está entrando\?/);
   assert.match(login, /autoFocus required minLength=\{6\}/);
