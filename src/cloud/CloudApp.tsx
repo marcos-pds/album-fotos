@@ -5,7 +5,7 @@ import Album, { createRandomEditablePage, defaultAlbumData, type AlbumSheet, typ
 import { fromRows, makeInitialRows, toRow, type AlbumPageRow } from './albumRows';
 import { signedPhotoUrls, uploadPrivatePhoto } from './photos';
 import { cloudConfigured, supabase } from './supabase';
-import { AccessGate, PendingAccess, ApprovalBell } from './AccessPortal';
+import { AccessGate, ApprovalBell } from './AccessPortal';
 
 const uiStyle: CSSProperties = {
   position: 'fixed', zIndex: 3000, top: 14, left: 14, right: 14, display: 'flex', alignItems: 'center',
@@ -224,12 +224,11 @@ export default function CloudApp() {
   if (checkingAuth) return <CenterPanel><p>Preparando seu álbum…</p></CenterPanel>;
   if (!session) return <><AccessGate onNotice={setNotice} />{notice && <div role="alert" style={{ position: 'fixed', bottom: 15, left: 15, right: 15, padding: 12, background: '#733b41', color: 'white', borderRadius: 10, zIndex: 4000 }}>{notice}</div>}</>;
   if (loadingAlbum) return <CenterPanel><p>Carregando as memórias compartilhadas…</p></CenterPanel>;
-  if (!allowed || allowedUserId !== session.user.id) return <>
-    <PendingAccess session={session} onNotice={setNotice} onApproved={() => setApprovalTick(v => v + 1)} />
-    {notice && <div role="alert" style={{ position: 'fixed', bottom: 15, left: 15, right: 15, padding: 12, background: '#733b41', color: 'white', borderRadius: 10, zIndex: 4000, display: 'flex', justifyContent: 'space-between', gap: 8 }}>
-      <span>{notice}</span><button type="button" onClick={() => setNotice('')} style={{ color: '#fff', background: 'transparent', border: 0 }}>✕</button>
-    </div>}
-  </>;
+  if (!allowed || allowedUserId !== session.user.id) return <CenterPanel>
+    <h2>Acesso restrito</h2>
+    <p>Este álbum permite somente os dois perfis definidos. Entre com Rayssa.Lima ou Marcos.Paulo.</p>
+    <button style={buttonStyle} onClick={() => void supabase?.auth.signOut()}>Sair</button>
+  </CenterPanel>;
 
   return <>
     <div style={uiStyle}>
