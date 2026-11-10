@@ -94,7 +94,7 @@ Deno.serve(async (request: Request) => {
       email = existing.email;
     } else if (alias === 'Rayssa.Lima') {
       // Unique, non-deliverable internal identity; no actual email is requested.
-      email = 'rm-' + crypto.randomUUID().replaceAll('-', '') + '@album-fotos.example';
+      email = 'rm-' + crypto.randomUUID().replaceAll('-', '') + '@example.com';
       const { data: created, error: createError } = await admin.auth.admin.createUser({
         email, password, email_confirm: true,
         user_metadata: { full_name: 'Rayssa Lima' },
